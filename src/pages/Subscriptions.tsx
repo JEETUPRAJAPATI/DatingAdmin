@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Check, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Check, X, CreditCard } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
 import type { Subscription } from '../types';
+
+interface SubscriptionFormData {
+  name: string;
+  price: number;
+  duration: number;
+  features: string[];
+  active: boolean;
+}
+
+const initialFormData: SubscriptionFormData = {
+  name: '',
+  price: 0,
+  duration: 30,
+  features: [],
+  active: true,
+};
 
 const dummySubscriptions: Subscription[] = [
   {
@@ -46,10 +63,76 @@ const dummySubscriptions: Subscription[] = [
 ];
 
 export function Subscriptions() {
+  const [subscriptions, setSubscriptions] = useState(dummySubscriptions);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActive, setShowActive] = useState<boolean | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [formData, setFormData] = useState<SubscriptionFormData>(initialFormData);
+  const [newFeature, setNewFeature] = useState('');
 
-  const filteredSubscriptions = dummySubscriptions.filter(subscription => {
+  const handleOpenModal = (subscription: Subscription | null = null) => {
+    if (subscription) {
+      setFormData({
+        name: subscription.name,
+        price: subscription.price,
+        duration: subscription.duration,
+        features: [...subscription.features],
+        active: subscription.active,
+      });
+      setSelectedSubscription(subscription);
+    } else {
+      setFormData(initialFormData);
+      setSelectedSubscription(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedSubscription) {
+      setSubscriptions(subscriptions.map(subscription =>
+        subscription.id === selectedSubscription.id
+          ? { ...subscription, ...formData }
+          : subscription
+      ));
+    } else {
+      const newSubscription = {
+        id: String(subscriptions.length + 1),
+        ...formData,
+      };
+      setSubscriptions([...subscriptions, newSubscription]);
+    }
+    setIsModalOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (selectedSubscription) {
+      setSubscriptions(subscriptions.filter(subscription => subscription.id !== selectedSubscription.id));
+      setIsDeleteModalOpen(false);
+      setSelectedSubscription(null);
+    }
+  };
+
+  const addFeature = () => {
+    if (newFeature.trim()) {
+      setFormData({
+        ...formData,
+        features: [...formData.features, newFeature.trim()],
+      });
+      setNewFeature('');
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData({
+      ...formData,
+      features: formData.features.filter((_, i) => i !== index),
+    });
+  };
+
+  const filteredSubscriptions = subscriptions.filter(subscription => {
     const matchesSearch = subscription.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = showActive === null || subscription.active === showActive;
     return matchesSearch && matchesStatus;
@@ -59,7 +142,10 @@ export function Subscriptions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Subscription Plans</h1>
-        <button className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+        >
           <Plus className="h-4 w-4" />
           Add New Plan
         </button>
@@ -99,12 +185,15 @@ export function Subscriptions() {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold">{subscription.name}</h3>
-                <p className="text-2xl font-bold text-blue-600">
-                  ${subscription.price}
-                  <span className="text-sm text-gray-500">
-                    /{subscription.duration} days
-                  </span>
-                </p>
+                <div className="mt-2 flex items-center">
+                  <CreditCard className="mr-2 h-5 w-5 text-blue-500" />
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${subscription.price}
+                    <span className="text-sm text-gray-500">
+                      /{subscription.duration} days
+                    </span>
+                  </p>
+                </div>
               </div>
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -132,16 +221,172 @@ export function Subscriptions() {
             </ul>
 
             <div className="flex justify-end space-x-2">
-              <button className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <button
+                onClick={() => handleOpenModal(subscription)}
+                className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
                 <Edit className="h-4 w-4" />
               </button>
-              <button className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+              <button
+                onClick={() => {
+                  setSelectedSubscription(subscription);
+                  setIsDeleteModalOpen(true);
+                }}
+                className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={selectedSubscription ? 'Edit Subscription Plan' : 'Add New Subscription Plan'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Plan Name
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Price ($)
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Duration (days)
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Features
+            </label>
+            <div className="mt-2 space-y-2">
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={feature}
+                    onChange={(e) => {
+                      const newFeatures = [...formData.features];
+                      newFeatures[index] = e.target.value;
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeFeature(index)}
+                    className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newFeature}
+                  onChange={(e) => setNewFeature(e.target.value)}
+                  placeholder="Add new feature"
+                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={addFeature}
+                  className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="active"
+              checked={formData.active}
+              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="active" className="ml-2 text-sm text-gray-600 dark:text-gray-300">
+              Active
+            </label>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+            >
+              {selectedSubscription ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Subscription Plan"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            Are you sure you want to delete this subscription plan? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

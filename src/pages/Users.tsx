@@ -1,9 +1,33 @@
 import React, { useState } from 'react';
-import { User, Search, Filter, MoreVertical, Edit, Trash2, Download } from 'lucide-react';
+import { User, Search, Filter, MoreVertical, Edit, Trash2, Download, Plus } from 'lucide-react';
 import { formatDate } from '../lib/utils';
-import type { User as UserType } from '../types';
+import { Modal } from '../components/ui/Modal';
 
-const dummyUsers: UserType[] = [
+interface UserFormData {
+  name: string;
+  email: string;
+  status: 'active' | 'banned' | 'pending';
+  location: {
+    city: string;
+    state: string;
+  };
+  age: number;
+  gender: string;
+}
+
+const initialFormData: UserFormData = {
+  name: '',
+  email: '',
+  status: 'active',
+  location: {
+    city: '',
+    state: '',
+  },
+  age: 18,
+  gender: 'Male',
+};
+
+const dummyUsers = [
   {
     id: '1',
     name: 'John Doe',
@@ -17,14 +41,79 @@ const dummyUsers: UserType[] = [
     joinedAt: '2024-01-15',
     lastActive: '2024-03-10',
   },
-  // Add more dummy users as needed
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+    status: 'active',
+    premium: false,
+    location: { city: 'Los Angeles', state: 'CA' },
+    age: 24,
+    gender: 'Female',
+    joinedAt: '2024-02-01',
+    lastActive: '2024-03-09',
+  },
 ];
 
 export function Users() {
+  const [users, setUsers] = useState(dummyUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<typeof dummyUsers[0] | null>(null);
+  const [formData, setFormData] = useState<UserFormData>(initialFormData);
 
-  const filteredUsers = dummyUsers.filter(user => {
+  const handleOpenModal = (user: typeof dummyUsers[0] | null = null) => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        email: user.email,
+        status: user.status as 'active' | 'banned' | 'pending',
+        location: user.location,
+        age: user.age,
+        gender: user.gender,
+      });
+      setSelectedUser(user);
+    } else {
+      setFormData(initialFormData);
+      setSelectedUser(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedUser) {
+      setUsers(users.map(user => 
+        user.id === selectedUser.id 
+          ? { ...user, ...formData }
+          : user
+      ));
+    } else {
+      const newUser = {
+        id: String(users.length + 1),
+        ...formData,
+        avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
+        premium: false,
+        joinedAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+      };
+      setUsers([...users, newUser]);
+    }
+    setIsModalOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (selectedUser) {
+      setUsers(users.filter(user => user.id !== selectedUser.id));
+      setIsDeleteModalOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
@@ -35,9 +124,19 @@ export function Users() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">User Management</h1>
-        <button className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
-          Add New User
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            <Plus className="h-4 w-4" />
+            Add New User
+          </button>
+          <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4">
@@ -65,10 +164,6 @@ export function Users() {
           <Filter className="h-4 w-4" />
           More Filters
         </button>
-        <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-          <Download className="h-4 w-4" />
-          Export
-        </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -83,6 +178,12 @@ export function Users() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Location
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Age
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Gender
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Joined Date
@@ -121,14 +222,29 @@ export function Users() {
                   {user.location.city}, {user.location.state}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                  {user.age}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                  {user.gender}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                   {formatDate(user.joinedAt)}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
                   <div className="flex space-x-3">
-                    <button className="text-blue-600 hover:text-blue-900">
+                    <button
+                      onClick={() => handleOpenModal(user)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
                       <Edit className="h-4 w-4" />
                     </button>
-                    <button className="text-red-600 hover:text-red-900">
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      className="text-red-600 hover:text-red-900"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                     <button className="text-gray-400 hover:text-gray-600">
@@ -142,19 +258,157 @@ export function Users() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Showing 1 to {filteredUsers.length} of {filteredUsers.length} results
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={selectedUser ? 'Edit User' : 'Add New User'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Name
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                City
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.city}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  location: { ...formData.location, city: e.target.value }
+                })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                State
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.state}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  location: { ...formData.location, state: e.target.value }
+                })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Age
+              </label>
+              <input
+                type="number"
+                required
+                min="18"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Gender
+              </label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({
+                ...formData,
+                status: e.target.value as 'active' | 'banned' | 'pending'
+              })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            >
+              <option value="active">Active</option>
+              <option value="banned">Banned</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+            >
+              {selectedUser ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete User"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            Are you sure you want to delete this user? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <button className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-            Previous
-          </button>
-          <button className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-            Next
-          </button>
-        </div>
-      </div>
+      </Modal>
     </div>
   );
 }
