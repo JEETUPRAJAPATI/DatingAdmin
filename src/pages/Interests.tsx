@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Tag } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Tag, Heart, Music, Camera, Gamepad, Book, Utensils, Plane } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 interface Interest {
@@ -8,50 +8,74 @@ interface Interest {
   category: string;
   usageCount: number;
   active: boolean;
+  icon: keyof typeof categoryIcons;
+  color: string;
 }
 
-const dummyInterests: Interest[] = [
-  {
-    id: '1',
-    name: 'Photography',
-    category: 'Hobbies',
-    usageCount: 1250,
-    active: true,
-  },
-  {
-    id: '2',
-    name: 'Hiking',
-    category: 'Outdoor Activities',
-    usageCount: 980,
-    active: true,
-  },
-  {
-    id: '3',
-    name: 'Cooking',
-    category: 'Hobbies',
-    usageCount: 1500,
-    active: true,
-  },
-  {
-    id: '4',
-    name: 'Gaming',
-    category: 'Entertainment',
-    usageCount: 2100,
-    active: true,
-  },
-];
+const categoryIcons = {
+  'Hobbies': Heart,
+  'Music': Music,
+  'Photography': Camera,
+  'Gaming': Gamepad,
+  'Reading': Book,
+  'Food': Utensils,
+  'Travel': Plane,
+};
 
 interface InterestFormData {
   name: string;
   category: string;
   active: boolean;
+  icon: keyof typeof categoryIcons;
+  color: string;
 }
 
 const initialFormData: InterestFormData = {
   name: '',
   category: 'Hobbies',
   active: true,
+  icon: 'Hobbies',
+  color: '#3B82F6',
 };
+
+const dummyInterests: Interest[] = [
+  {
+    id: '1',
+    name: 'Photography',
+    category: 'Photography',
+    usageCount: 1250,
+    active: true,
+    icon: 'Photography',
+    color: '#3B82F6',
+  },
+  {
+    id: '2',
+    name: 'Hiking',
+    category: 'Hobbies',
+    usageCount: 980,
+    active: true,
+    icon: 'Hobbies',
+    color: '#EF4444',
+  },
+  {
+    id: '3',
+    name: 'Cooking',
+    category: 'Food',
+    usageCount: 1500,
+    active: true,
+    icon: 'Food',
+    color: '#10B981',
+  },
+  {
+    id: '4',
+    name: 'Gaming',
+    category: 'Gaming',
+    usageCount: 2100,
+    active: true,
+    icon: 'Gaming',
+    color: '#8B5CF6',
+  },
+];
 
 export function Interests() {
   const [interests, setInterests] = useState(dummyInterests);
@@ -70,6 +94,8 @@ export function Interests() {
         name: interest.name,
         category: interest.category,
         active: interest.active,
+        icon: interest.icon,
+        color: interest.color,
       });
       setSelectedInterest(interest);
     } else {
@@ -115,10 +141,13 @@ export function Interests() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Interest Management</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Interest Management</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage user interests and categories</p>
+        </div>
         <button
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
         >
           <Plus className="h-4 w-4" />
           Add Interest
@@ -149,51 +178,69 @@ export function Interests() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredInterests.map((interest) => (
-          <div
-            key={interest.id}
-            className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-          >
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-medium">{interest.name}</h3>
-                </div>
-                <div className="flex gap-2">
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                    {interest.category}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                    {interest.usageCount} users
-                  </span>
-                  {interest.active && (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                      Active
+        {filteredInterests.map((interest) => {
+          const IconComponent = categoryIcons[interest.icon];
+          return (
+            <div
+              key={interest.id}
+              className="group relative rounded-lg border border-gray-200 bg-white p-6 transition-all hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+              style={{ borderLeftColor: interest.color, borderLeftWidth: '4px' }}
+            >
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="rounded-lg p-2"
+                      style={{ backgroundColor: `${interest.color}20` }}
+                    >
+                      <IconComponent
+                        className="h-5 w-5"
+                        style={{ color: interest.color }}
+                      />
+                    </div>
+                    <h3 className="text-lg font-medium">{interest.name}</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      style={{
+                        backgroundColor: `${interest.color}20`,
+                        color: interest.color,
+                      }}
+                    >
+                      {interest.category}
                     </span>
-                  )}
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                      {interest.usageCount} users
+                    </span>
+                    {interest.active && (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Active
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleOpenModal(interest)}
-                  className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedInterest(interest);
-                    setIsDeleteModalOpen(true);
-                  }}
-                  className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex space-x-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    onClick={() => handleOpenModal(interest)}
+                    className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedInterest(interest);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <Modal
@@ -218,13 +265,34 @@ export function Interests() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Category
             </label>
-            <input
-              type="text"
-              required
+            <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) => {
+                const category = e.target.value as keyof typeof categoryIcons;
+                setFormData({
+                  ...formData,
+                  category,
+                  icon: category,
+                });
+              }}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-              placeholder="e.g., Hobbies, Sports, Music"
+            >
+              {Object.keys(categoryIcons).map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Color
+            </label>
+            <input
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              className="mt-1 h-10 w-full rounded-lg border border-gray-300"
             />
           </div>
           <div className="flex items-center">

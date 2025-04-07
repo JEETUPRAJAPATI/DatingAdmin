@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Filter, HandIcon as DragHandleDots2Icon, AlertCircle } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 interface Question {
@@ -9,6 +9,7 @@ interface Question {
   category: string;
   options?: string[];
   required: boolean;
+  order: number;
 }
 
 interface QuestionFormData {
@@ -35,6 +36,7 @@ const dummyQuestions: Question[] = [
     category: 'Preferences',
     options: ['Relationship', 'Friendship', 'Casual Dating'],
     required: true,
+    order: 1,
   },
   {
     id: '2',
@@ -42,6 +44,7 @@ const dummyQuestions: Question[] = [
     type: 'YES_NO',
     category: 'Lifestyle',
     required: true,
+    order: 2,
   },
   {
     id: '3',
@@ -49,6 +52,7 @@ const dummyQuestions: Question[] = [
     type: 'TEXT',
     category: 'Preferences',
     required: false,
+    order: 3,
   },
 ];
 
@@ -56,11 +60,13 @@ export function Questions() {
   const [questions, setQuestions] = useState(dummyQuestions);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [formData, setFormData] = useState<QuestionFormData>(initialFormData);
   const [newOption, setNewOption] = useState('');
+  const [draggedQuestion, setDraggedQuestion] = useState<Question | null>(null);
 
   const categories = Array.from(new Set(questions.map(q => q.category)));
 
@@ -93,6 +99,7 @@ export function Questions() {
       const newQuestion = {
         id: String(questions.length + 1),
         ...formData,
+        order: questions.length + 1,
       };
       setQuestions([...questions, newQuestion]);
     }
@@ -124,19 +131,48 @@ export function Questions() {
     });
   };
 
+  const handleDragStart = (question: Question) => {
+    setDraggedQuestion(question);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetQuestion: Question) => {
+    if (!draggedQuestion || draggedQuestion.id === targetQuestion.id) return;
+
+    const reorderedQuestions = questions.map(q => {
+      if (q.id === draggedQuestion.id) {
+        return { ...q, order: targetQuestion.order };
+      }
+      if (q.id === targetQuestion.id) {
+        return { ...q, order: draggedQuestion.order };
+      }
+      return q;
+    });
+
+    setQuestions(reorderedQuestions.sort((a, b) => a.order - b.order));
+    setDraggedQuestion(null);
+  };
+
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = question.question.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || question.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesType = typeFilter === 'all' || question.type === typeFilter;
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Questions & Quiz</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Questions & Quiz</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage your questionnaire and matching criteria</p>
+        </div>
         <button
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
         >
           <Plus className="h-4 w-4" />
           Add Question
@@ -164,17 +200,42 @@ export function Questions() {
             <option key={category} value={category}>{category}</option>
           ))}
         </select>
+        <select
+          className="rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="MCQ">Multiple Choice</option>
+          <option value="YES_NO">Yes/No</option>
+          <option value="TEXT">Text</option>
+        </select>
       </div>
 
-      <div className="grid gap-6">
+      <div className="space-y-4">
         {filteredQuestions.map((question) => (
           <div
             key={question.id}
-            className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+            draggable
+            onDragStart={() => handleDragStart(question)}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop(question)}
+            className="group relative rounded-lg border border-gray-200 bg-white p-6 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
           >
-            <div className="flex items-start justify-between">
+            <div className="absolute left-2 top-1/2 -translate-y-1/2 cursor-move opacity-0 transition-opacity group-hover:opacity-100">
+              <DragHandleDots2Icon className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="flex items-start justify-between pl-6">
               <div className="space-y-1">
-                <h3 className="text-lg font-medium">{question.question}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-medium">{question.question}</h3>
+                  {question.required && (
+                    <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      <AlertCircle className="h-3 w-3" />
+                      Required
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                     {question.type}
@@ -182,17 +243,12 @@ export function Questions() {
                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                     {question.category}
                   </span>
-                  {question.required && (
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                      Required
-                    </span>
-                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleOpenModal(question)}
-                  className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
@@ -201,17 +257,17 @@ export function Questions() {
                     setSelectedQuestion(question);
                     setIsDeleteModalOpen(true);
                   }}
-                  className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {question.options && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Options:</p>
-                <div className="mt-2 flex flex-wrap gap-2">
+            {question.type === 'MCQ' && question.options && (
+              <div className="mt-4 pl-6">
+                <p className="mb-2 text-sm font-medium text-gray-500">Options:</p>
+                <div className="flex flex-wrap gap-2">
                   {question.options.map((option, index) => (
                     <span
                       key={index}
@@ -305,6 +361,12 @@ export function Questions() {
                     onChange={(e) => setNewOption(e.target.value)}
                     placeholder="Add new option"
                     className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addOption();
+                      }
+                    }}
                   />
                   <button
                     type="button"

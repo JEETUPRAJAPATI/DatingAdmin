@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Check, X, CreditCard } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Check, X, CreditCard, Crown, Users, Zap, Shield, Star } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import type { Subscription } from '../types';
 
@@ -9,6 +9,7 @@ interface SubscriptionFormData {
   duration: number;
   features: string[];
   active: boolean;
+  highlight?: boolean;
 }
 
 const initialFormData: SubscriptionFormData = {
@@ -17,9 +18,10 @@ const initialFormData: SubscriptionFormData = {
   duration: 30,
   features: [],
   active: true,
+  highlight: false,
 };
 
-const dummySubscriptions: Subscription[] = [
+const dummySubscriptions: (Subscription & { highlight?: boolean })[] = [
   {
     id: '1',
     name: 'Premium Monthly',
@@ -33,6 +35,7 @@ const dummySubscriptions: Subscription[] = [
       'Boost Profile',
     ],
     active: true,
+    highlight: false,
   },
   {
     id: '2',
@@ -47,6 +50,7 @@ const dummySubscriptions: Subscription[] = [
       'Exclusive Events Access',
     ],
     active: true,
+    highlight: true,
   },
   {
     id: '3',
@@ -59,8 +63,17 @@ const dummySubscriptions: Subscription[] = [
       'Standard Support',
     ],
     active: false,
+    highlight: false,
   },
 ];
+
+const featureIcons = {
+  'Unlimited Likes': Users,
+  'See Who Likes You': Crown,
+  'Advanced Filters': Shield,
+  'Priority Support': Zap,
+  'Boost Profile': Star,
+};
 
 export function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState(dummySubscriptions);
@@ -68,11 +81,11 @@ export function Subscriptions() {
   const [showActive, setShowActive] = useState<boolean | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<(typeof dummySubscriptions)[0] | null>(null);
   const [formData, setFormData] = useState<SubscriptionFormData>(initialFormData);
   const [newFeature, setNewFeature] = useState('');
 
-  const handleOpenModal = (subscription: Subscription | null = null) => {
+  const handleOpenModal = (subscription: (typeof dummySubscriptions)[0] | null = null) => {
     if (subscription) {
       setFormData({
         name: subscription.name,
@@ -80,6 +93,7 @@ export function Subscriptions() {
         duration: subscription.duration,
         features: [...subscription.features],
         active: subscription.active,
+        highlight: subscription.highlight,
       });
       setSelectedSubscription(subscription);
     } else {
@@ -138,13 +152,21 @@ export function Subscriptions() {
     return matchesSearch && matchesStatus;
   });
 
+  const getFeatureIcon = (feature: string) => {
+    const IconComponent = featureIcons[feature as keyof typeof featureIcons];
+    return IconComponent ? <IconComponent className="h-4 w-4" /> : <Check className="h-4 w-4" />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Subscription Plans</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Subscription Plans</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage your subscription plans and pricing</p>
+        </div>
         <button
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
         >
           <Plus className="h-4 w-4" />
           Add New Plan
@@ -180,50 +202,59 @@ export function Subscriptions() {
         {filteredSubscriptions.map((subscription) => (
           <div
             key={subscription.id}
-            className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+            className={`relative rounded-xl border-2 bg-white p-6 transition-all hover:shadow-lg dark:bg-gray-800 ${
+              subscription.highlight
+                ? 'border-blue-500 shadow-blue-100 dark:shadow-blue-900/20'
+                : 'border-gray-200 dark:border-gray-700'
+            }`}
           >
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">{subscription.name}</h3>
-                <div className="mt-2 flex items-center">
-                  <CreditCard className="mr-2 h-5 w-5 text-blue-500" />
-                  <p className="text-2xl font-bold text-blue-600">
-                    ${subscription.price}
-                    <span className="text-sm text-gray-500">
-                      /{subscription.duration} days
-                    </span>
-                  </p>
-                </div>
+            {subscription.highlight && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-500 px-4 py-1 text-xs font-semibold text-white">
+                Most Popular
               </div>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  subscription.active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {subscription.active ? (
-                  <Check className="mr-1 h-3 w-3" />
-                ) : (
-                  <X className="mr-1 h-3 w-3" />
-                )}
-                {subscription.active ? 'Active' : 'Inactive'}
-              </span>
+            )}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold">{subscription.name}</h3>
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    subscription.active
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {subscription.active ? (
+                    <Check className="mr-1 h-3 w-3" />
+                  ) : (
+                    <X className="mr-1 h-3 w-3" />
+                  )}
+                  {subscription.active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="mt-4 flex items-center">
+                <CreditCard className="mr-2 h-6 w-6 text-blue-500" />
+                <span className="text-3xl font-bold text-blue-600">
+                  ${subscription.price}
+                </span>
+                <span className="ml-2 text-sm text-gray-500">
+                  /{subscription.duration} days
+                </span>
+              </div>
             </div>
 
-            <ul className="mb-6 space-y-2">
+            <div className="space-y-3">
               {subscription.features.map((feature, index) => (
-                <li key={index} className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  {feature}
-                </li>
+                <div key={index} className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                  {getFeatureIcon(feature)}
+                  <span className="text-sm">{feature}</span>
+                </div>
               ))}
-            </ul>
+            </div>
 
-            <div className="flex justify-end space-x-2">
+            <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => handleOpenModal(subscription)}
-                className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
               >
                 <Edit className="h-4 w-4" />
               </button>
@@ -232,7 +263,7 @@ export function Subscriptions() {
                   setSelectedSubscription(subscription);
                   setIsDeleteModalOpen(true);
                 }}
-                className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -321,6 +352,12 @@ export function Subscriptions() {
                   onChange={(e) => setNewFeature(e.target.value)}
                   placeholder="Add new feature"
                   className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addFeature();
+                    }
+                  }}
                 />
                 <button
                   type="button"
@@ -332,16 +369,24 @@ export function Subscriptions() {
               </div>
             </div>
           </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="active"
-              checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="active" className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-              Active
+          <div className="flex items-center gap-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Active</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.highlight}
+                onChange={(e) => setFormData({ ...formData, highlight: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Highlight as Popular</span>
             </label>
           </div>
           <div className="mt-6 flex justify-end gap-2">
