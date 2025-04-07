@@ -18,6 +18,7 @@ import { Verification } from './pages/Verification';
 import { ActivityLogs } from './pages/ActivityLogs';
 import { EmailTemplates } from './pages/EmailTemplates';
 import { Support } from './pages/Support';
+import { Profile } from './pages/Profile';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="logs" element={<ActivityLogs />} />
           <Route path="email-templates" element={<EmailTemplates />} />
           <Route path="support" element={<Support />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </BrowserRouter>

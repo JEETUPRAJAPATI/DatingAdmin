@@ -1,41 +1,169 @@
 import React, { useState } from 'react';
-import { Search, MessageSquare, Flag, Trash2 } from 'lucide-react';
+import { Search, MessageSquare, Flag, Trash2, Send, Smile, Image as ImageIcon, MoreVertical, Phone, Video, Ban } from 'lucide-react';
+import { formatDate } from '../lib/utils';
 
 interface ChatMessage {
   id: string;
   senderId: string;
-  receiverId: string;
+  senderName: string;
+  senderAvatar: string;
   message: string;
   timestamp: string;
-  senderName: string;
-  receiverName: string;
+  status: 'sent' | 'delivered' | 'read';
+  type: 'text' | 'image';
+  imageUrl?: string;
 }
 
-const dummyChats: ChatMessage[] = [
+interface ChatThread {
+  id: string;
+  participants: {
+    id: string;
+    name: string;
+    avatar: string;
+    lastSeen: string;
+    isOnline: boolean;
+  }[];
+  lastMessage: ChatMessage;
+  unreadCount: number;
+  isPinned: boolean;
+}
+
+const dummyChats: ChatThread[] = [
   {
     id: '1',
+    participants: [
+      {
+        id: 'user1',
+        name: 'Sarah Parker',
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+        lastSeen: '2024-03-10T10:30:00',
+        isOnline: true,
+      },
+      {
+        id: 'user2',
+        name: 'John Smith',
+        avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
+        lastSeen: '2024-03-10T10:25:00',
+        isOnline: false,
+      },
+    ],
+    lastMessage: {
+      id: 'm1',
+      senderId: 'user1',
+      senderName: 'Sarah Parker',
+      senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      message: 'Hey, how are you?',
+      timestamp: '2024-03-10T10:30:00',
+      status: 'read',
+      type: 'text',
+    },
+    unreadCount: 2,
+    isPinned: true,
+  },
+  {
+    id: '2',
+    participants: [
+      {
+        id: 'user3',
+        name: 'Emily Brown',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop',
+        lastSeen: '2024-03-10T09:45:00',
+        isOnline: true,
+      },
+      {
+        id: 'user4',
+        name: 'Michael Wilson',
+        avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop',
+        lastSeen: '2024-03-10T09:40:00',
+        isOnline: true,
+      },
+    ],
+    lastMessage: {
+      id: 'm2',
+      senderId: 'user4',
+      senderName: 'Michael Wilson',
+      senderAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop',
+      message: 'Check out this photo!',
+      timestamp: '2024-03-10T09:45:00',
+      status: 'delivered',
+      type: 'image',
+      imageUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=600&h=400&fit=crop',
+    },
+    unreadCount: 0,
+    isPinned: false,
+  },
+];
+
+const dummyMessages: ChatMessage[] = [
+  {
+    id: 'msg1',
     senderId: 'user1',
-    receiverId: 'user2',
+    senderName: 'Sarah Parker',
+    senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
     message: 'Hey, how are you?',
     timestamp: '2024-03-10T10:30:00',
-    senderName: 'John Doe',
-    receiverName: 'Jane Smith',
+    status: 'read',
+    type: 'text',
   },
-  // Add more dummy chats
+  {
+    id: 'msg2',
+    senderId: 'user2',
+    senderName: 'John Smith',
+    senderAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
+    message: 'I\'m good, thanks! How about you?',
+    timestamp: '2024-03-10T10:31:00',
+    status: 'read',
+    type: 'text',
+  },
+  {
+    id: 'msg3',
+    senderId: 'user1',
+    senderName: 'Sarah Parker',
+    senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+    message: 'Look at this amazing view!',
+    timestamp: '2024-03-10T10:32:00',
+    status: 'read',
+    type: 'image',
+    imageUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=600&h=400&fit=crop',
+  },
 ];
 
 export function Chats() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChat, setSelectedChat] = useState<ChatMessage | null>(null);
+  const [selectedChat, setSelectedChat] = useState<ChatThread | null>(null);
+  const [messages, setMessages] = useState(dummyMessages);
+  const [newMessage, setNewMessage] = useState('');
+
+  const filteredChats = dummyChats.filter(chat =>
+    chat.participants.some(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedChat) return;
+
+    const newMsg: ChatMessage = {
+      id: `msg${messages.length + 1}`,
+      senderId: 'admin',
+      senderName: 'Admin',
+      senderAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+      message: newMessage,
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+      type: 'text',
+    };
+
+    setMessages([...messages, newMsg]);
+    setNewMessage('');
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Chat Management</h1>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-4">
+    <div className="flex h-[calc(100vh-7rem)] space-x-6">
+      {/* Chat List */}
+      <div className="w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <div className="border-b border-gray-200 p-4 dark:border-gray-700">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -46,79 +174,177 @@ export function Chats() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            {dummyChats.map((chat) => (
-              <button
-                key={chat.id}
-                className={`w-full rounded-lg border p-4 text-left transition-colors ${
-                  selectedChat?.id === chat.id
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800'
-                }`}
-                onClick={() => setSelectedChat(chat)}
-              >
-                <div className="flex items-center justify-between">
+        <div className="h-full overflow-y-auto">
+          {filteredChats.map((chat) => (
+            <button
+              key={chat.id}
+              className={`w-full border-b border-gray-200 p-4 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${
+                selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+              }`}
+              onClick={() => setSelectedChat(chat)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <img
+                      src={chat.participants[0].avatar}
+                      alt={chat.participants[0].name}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    {chat.participants[0].isOnline && (
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+                    )}
+                  </div>
                   <div>
-                    <p className="font-medium">
-                      {chat.senderName} → {chat.receiverName}
-                    </p>
+                    <h3 className="font-medium">{chat.participants[0].name}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(chat.timestamp).toLocaleString()}
+                      {chat.lastMessage.type === 'image' ? 'Sent an image' : chat.lastMessage.message}
                     </p>
                   </div>
-                  <MessageSquare className="h-5 w-5 text-gray-400" />
                 </div>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                  {chat.message}
-                </p>
-              </button>
-            ))}
-          </div>
+                <div className="flex flex-col items-end space-y-1">
+                  <span className="text-xs text-gray-500">
+                    {new Date(chat.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {chat.unreadCount > 0 && (
+                    <span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white">
+                      {chat.unreadCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
+      </div>
 
-        <div className="lg:col-span-2">
-          {selectedChat ? (
-            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-6 flex items-center justify-between">
+      {/* Chat Window */}
+      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        {selectedChat ? (
+          <>
+            {/* Chat Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <img
+                    src={selectedChat.participants[0].avatar}
+                    alt={selectedChat.participants[0].name}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                  {selectedChat.participants[0].isOnline && (
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
+                  )}
+                </div>
                 <div>
-                  <h2 className="text-lg font-semibold">
-                    Chat between {selectedChat.senderName} and {selectedChat.receiverName}
-                  </h2>
+                  <h3 className="font-medium">{selectedChat.participants[0].name}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(selectedChat.timestamp).toLocaleString()}
+                    {selectedChat.participants[0].isOnline ? 'Online' : 'Last seen ' + formatDate(selectedChat.participants[0].lastSeen)}
                   </p>
                 </div>
-                <div className="flex space-x-2">
-                  <button className="rounded-lg p-2 text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
-                    <Flag className="h-5 w-5" />
-                  </button>
-                  <button className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
               </div>
+              <div className="flex items-center space-x-2">
+                <button className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Phone className="h-5 w-5" />
+                </button>
+                <button className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Video className="h-5 w-5" />
+                </button>
+                <button className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Flag className="h-5 w-5" />
+                </button>
+                <button className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Ban className="h-5 w-5" />
+                </button>
+                <button className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
 
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-4">
-                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {selectedChat.senderName}
-                  </p>
-                  <p className="mt-1 text-gray-600 dark:text-gray-300">
-                    {selectedChat.message}
-                  </p>
-                </div>
-                {/* Add more messages here */}
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.senderId === 'admin' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex max-w-[70%] items-end space-x-2 ${message.senderId === 'admin' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      <img
+                        src={message.senderAvatar}
+                        alt={message.senderName}
+                        className="h-8 w-8 rounded-full"
+                      />
+                      <div>
+                        {message.type === 'text' ? (
+                          <div className={`rounded-lg px-4 py-2 ${
+                            message.senderId === 'admin'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                            <p>{message.message}</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-hidden rounded-lg">
+                            <img
+                              src={message.imageUrl}
+                              alt="Shared image"
+                              className="max-w-sm rounded-lg"
+                            />
+                          </div>
+                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <p className="text-gray-500 dark:text-gray-400">
-                Select a chat to view the conversation
-              </p>
+
+            {/* Message Input */}
+            <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+              <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Smile className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-blue-500 p-2 text-white hover:bg-blue-600"
+                  disabled={!newMessage.trim()}
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </form>
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-2 text-gray-500">Select a chat to start messaging</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
