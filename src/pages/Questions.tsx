@@ -741,7 +741,6 @@ export function Questions() {
             </button>
             <button
               type="submit"
-              
               className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             >
               {selectedQuestion ? 'Update' : 'Create'}

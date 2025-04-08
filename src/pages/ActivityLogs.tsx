@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Activity, User, Settings, Shield, Download } from 'lucide-react';
+import { Search, Filter, Activity, User, Settings, Shield, Download, X } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
 interface ActivityLog {
@@ -13,6 +13,20 @@ interface ActivityLog {
   ipAddress: string;
   timestamp: string;
 }
+
+interface FilterData {
+  timeRange: string;
+  actionType: string;
+  userType: string;
+  severity: string;
+}
+
+const initialFilterData: FilterData = {
+  timeRange: 'all',
+  actionType: 'all',
+  userType: 'all',
+  severity: 'all',
+};
 
 const dummyLogs: ActivityLog[] = [
   {
@@ -53,14 +67,25 @@ const dummyLogs: ActivityLog[] = [
 export function ActivityLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [dateRange, setDateRange] = useState('24h');
+  const [filterData, setFilterData] = useState<FilterData>(initialFilterData);
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredLogs = dummyLogs.filter(log => {
     const matchesSearch = log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.details.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || log.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesTimeRange = filterData.timeRange === 'all' ||
+      (filterData.timeRange === 'today' && new Date(log.timestamp).toDateString() === new Date().toDateString()) ||
+      (filterData.timeRange === 'week' && new Date(log.timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterData.timeRange === 'month' && new Date(log.timestamp) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+    const matchesActionType = filterData.actionType === 'all' || log.action.toLowerCase().includes(filterData.actionType.toLowerCase());
+    const matchesUserType = filterData.userType === 'all' || 
+      (filterData.userType === 'admin' && log.userId.startsWith('admin')) ||
+      (filterData.userType === 'user' && log.userId.startsWith('user')) ||
+      (filterData.userType === 'system' && log.userId === 'system');
+
+    return matchesSearch && matchesCategory && matchesTimeRange && matchesActionType && matchesUserType;
   });
 
   const getCategoryIcon = (category: string) => {
@@ -110,20 +135,115 @@ export function ActivityLogs() {
           <option value="system">System</option>
           <option value="security">Security</option>
         </select>
-        <select
-          className="rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-        >
-          <option value="24h">Last 24 Hours</option>
-          <option value="7d">Last 7 Days</option>
-          <option value="30d">Last 30 Days</option>
-          <option value="all">All Time</option>
-        </select>
-        <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-          <Filter className="h-4 w-4" />
-          More Filters
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            <Filter className="h-4 w-4" />
+            More Filters
+            {Object.values(filterData).some(value => value !== 'all') && (
+              <span className="ml-1 rounded-full bg-blue-500 px-2 text-xs text-white">
+                {Object.values(filterData).filter(value => value !== 'all').length}
+              </span>
+            )}
+          </button>
+
+          {showFilters && (
+            <div className="absolute right-0 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Advanced Filters</h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Time Range
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700"
+                    value={filterData.timeRange}
+                    onChange={(e) => setFilterData({ ...filterData, timeRange: e.target.value })}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Action Type
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700"
+                    value={filterData.actionType}
+                    onChange={(e) => setFilterData({ ...filterData, actionType: e.target.value })}
+                  >
+                    <option value="all">All Actions</option>
+                    <option value="login">Login</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="create">Create</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    User Type
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700"
+                    value={filterData.userType}
+                    onChange={(e) => setFilterData({ ...filterData, userType: e.target.value })}
+                  >
+                    <option value="all">All Users</option>
+                    <option value="admin">Admins</option>
+                    <option value="user">Regular Users</option>
+                    <option value="system">System</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Severity
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700"
+                    value={filterData.severity}
+                    onChange={(e) => setFilterData({ ...filterData, severity: e.target.value })}
+                  >
+                    <option value="all">All Levels</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setFilterData(initialFilterData);
+                      setShowFilters(false);
+                    }}
+                    className="rounded-lg border border-gray-200 px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-700"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="rounded-lg bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -139,12 +259,14 @@ export function ActivityLogs() {
                 className="h-10 w-10 rounded-full"
               />
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{log.userName}</span>
-                  <span className="text-sm text-gray-500">•</span>
-                  <span className="text-sm text-gray-500">{log.ipAddress}</span>
-                  <span className="text-sm text-gray-500">•</span>
-                  <span className="text-sm text-gray-500">{formatDate(log.timestamp)}</span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium">{log.userName}</span>
+                    <span className="text-sm text-gray-500">•</span>
+                    <span className="text-sm text-gray-500">{log.ipAddress}</span>
+                    <span className="text-sm text-gray-500">•</span>
+                    <span className="text-sm text-gray-500">{formatDate(log.timestamp)}</span>
+                  </div>
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${

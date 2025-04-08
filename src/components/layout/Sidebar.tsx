@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +19,8 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -41,13 +43,23 @@ const navigation = [
   { name: 'Support', href: '/support', icon: HelpCircle },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Here you would handle logout logic like clearing tokens, etc
+    navigate('/login');
+  };
 
   return (
     <div
       className={cn(
-        'flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900',
+        'flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
@@ -57,18 +69,29 @@ export function Sidebar() {
             Dating Admin
           </span>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
+        <div className="flex items-center">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800 lg:block hidden"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="ml-2 rounded p-1 text-gray-500 hover:bg-gray-100 lg:hidden dark:hover:bg-gray-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
           )}
-        </button>
+        </div>
       </div>
-      <nav className="flex-1 space-y-1 px-2 py-4">
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {navigation.map((item) => (
           <NavLink
             key={item.name}
@@ -81,12 +104,26 @@ export function Sidebar() {
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'
               )
             }
+            onClick={onClose}
           >
             <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
             {!collapsed && <span>{item.name}</span>}
           </NavLink>
         ))}
       </nav>
+
+      <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+        <button
+          onClick={handleLogout}
+          className={cn(
+            'flex w-full items-center rounded-lg px-2 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20',
+            collapsed && 'justify-center'
+          )}
+        >
+          <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
+          {!collapsed && <span>Logout</span>}
+        </button>
+      </div>
     </div>
   );
 }

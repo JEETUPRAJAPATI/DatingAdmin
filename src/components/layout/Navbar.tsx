@@ -38,9 +38,11 @@ const dummyNotifications: Notification[] = [
 export function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [notifications, setNotifications] = useState(dummyNotifications);
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,6 +51,9 @@ export function Navbar() {
       }
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setShowProfile(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearch(false);
       }
     }
 
@@ -65,18 +70,42 @@ export function Navbar() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Search..."
-            className="h-10 rounded-lg border border-gray-200 pl-10 pr-4 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
-          />
-        </div>
+    <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-6">
+      {/* Search - Desktop */}
+      <div className="relative hidden flex-1 lg:block">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          placeholder="Search..."
+          className="h-10 w-full max-w-md rounded-lg border border-gray-200 pl-10 pr-4 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+        />
       </div>
-      <div className="flex items-center gap-4">
+
+      {/* Search - Mobile */}
+      <div className="relative lg:hidden" ref={searchRef}>
+        <button
+          className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+          onClick={() => setShowSearch(!showSearch)}
+        >
+          <Search className="h-5 w-5" />
+        </button>
+
+        {showSearch && (
+          <div className="absolute right-0 mt-2 w-screen max-w-md rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Search..."
+                className="h-10 w-full rounded-lg border border-gray-200 pl-10 pr-4 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-4">
         <ThemeToggle />
         
         {/* Notifications */}
@@ -92,11 +121,11 @@ export function Navbar() {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <div className="absolute right-0 mt-2 w-80 max-h-[80vh] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:w-96">
               <div className="border-b border-gray-200 p-4 dark:border-gray-700">
                 <h3 className="text-lg font-semibold">Notifications</h3>
               </div>
-              <div className="max-h-96 overflow-y-auto">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
@@ -136,7 +165,7 @@ export function Navbar() {
             onClick={() => setShowProfile(!showProfile)}
           >
             <User className="h-5 w-5" />
-            <span className="text-sm font-medium">Admin</span>
+            <span className="hidden text-sm font-medium sm:block">Admin</span>
           </button>
 
           {showProfile && (

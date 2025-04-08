@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Search, MessageSquare, Flag, Trash2, Send, Smile, Image as ImageIcon, MoreVertical, Phone, Video, Ban } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, MessageSquare, Flag, Trash2, Send, Smile, Image as ImageIcon, MoreVertical, Phone, Video, Ban, X } from 'lucide-react';
 import { formatDate } from '../lib/utils';
+import { Card, CardContent } from '../components/ui/Card';
+import { Filters } from '../components/ui/Filters';
 
 interface ChatMessage {
   id: string;
@@ -133,6 +135,16 @@ export function Chats() {
   const [selectedChat, setSelectedChat] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState(dummyMessages);
   const [newMessage, setNewMessage] = useState('');
+  const [showMobileChat, setShowMobileChat] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const filteredChats = dummyChats.filter(chat =>
     chat.participants.some(p => 
@@ -160,20 +172,17 @@ export function Chats() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] space-x-6">
+    <div className="flex h-[calc(100vh-7rem)] flex-col lg:flex-row lg:space-x-6">
       {/* Chat List */}
-      <div className="w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className={`w-full border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:w-1/3 ${
+        showMobileChat ? 'hidden lg:block' : 'block'
+      }`}>
         <div className="border-b border-gray-200 p-4 dark:border-gray-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Search chats..."
-              className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <Filters
+            searchPlaceholder="Search chats..."
+            searchValue={searchTerm}
+            onSearch={setSearchTerm}
+          />
         </div>
 
         <div className="h-full overflow-y-auto">
@@ -183,7 +192,10 @@ export function Chats() {
               className={`w-full border-b border-gray-200 p-4 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${
                 selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
-              onClick={() => setSelectedChat(chat)}
+              onClick={() => {
+                setSelectedChat(chat);
+                setShowMobileChat(true);
+              }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -221,12 +233,20 @@ export function Chats() {
       </div>
 
       {/* Chat Window */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className={`flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 ${
+        !showMobileChat ? 'hidden lg:flex' : 'flex'
+      }`}>
         {selectedChat ? (
           <>
             {/* Chat Header */}
             <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
               <div className="flex items-center space-x-3">
+                <button
+                  className="lg:hidden rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                  onClick={() => setShowMobileChat(false)}
+                >
+                  <X className="h-5 w-5" />
+                </button>
                 <div className="relative">
                   <img
                     src={selectedChat.participants[0].avatar}
@@ -302,6 +322,7 @@ export function Chats() {
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </div>
             </div>
 

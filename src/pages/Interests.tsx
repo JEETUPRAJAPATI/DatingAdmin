@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Tag, Heart, Music, Camera, Gamepad, Book, Utensils, Plane } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Tag, Heart, Music, Camera, Gamepad, Book, Utensils, Plane, X } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { Card, CardContent } from '../components/ui/Card';
+import { Filters, FilterDropdown } from '../components/ui/Filters';
 
 interface Interest {
   id: string;
@@ -140,7 +142,7 @@ export function Interests() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Interest Management</h1>
           <p className="mt-1 text-sm text-gray-500">Manage user interests and categories</p>
@@ -154,73 +156,70 @@ export function Interests() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Search interests..."
-            className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <select
-          className="rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
+      <Filters
+        searchPlaceholder="Search interests..."
+        searchValue={searchTerm}
+        onSearch={setSearchTerm}
+      >
+        <FilterDropdown
+          label="All Categories"
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option value="all">All Categories</option>
-          {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
-          ))}
-        </select>
-      </div>
+          onChange={setCategoryFilter}
+          options={categories.map(category => ({
+            value: category,
+            label: category,
+          }))}
+        />
+      </Filters>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredInterests.map((interest) => {
           const IconComponent = categoryIcons[interest.icon];
           return (
-            <div
+            <Card
               key={interest.id}
-              className="group relative rounded-lg border border-gray-200 bg-white p-6 transition-all hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
-              style={{ borderLeftColor: interest.color, borderLeftWidth: '4px' }}
+              className="group relative transition-all hover:shadow-lg"
             >
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="rounded-lg p-2"
-                      style={{ backgroundColor: `${interest.color}20` }}
-                    >
-                      <IconComponent
-                        className="h-5 w-5"
-                        style={{ color: interest.color }}
-                      />
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="rounded-lg p-3"
+                        style={{ backgroundColor: `${interest.color}20` }}
+                      >
+                        {IconComponent && (
+                          <IconComponent
+                            className="h-6 w-6"
+                            style={{ color: interest.color }}
+                          />
+                        )}
+                      </div>
+                      <h3 className="text-lg font-medium">{interest.name}</h3>
                     </div>
-                    <h3 className="text-lg font-medium">{interest.name}</h3>
-                  </div>
-                  <div className="flex gap-2">
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor: `${interest.color}20`,
-                        color: interest.color,
-                      }}
-                    >
-                      {interest.category}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                      {interest.usageCount} users
-                    </span>
-                    {interest.active && (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Active
+                    <div className="flex flex-wrap gap-2">
+                      <span
+                        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        style={{
+                          backgroundColor: `${interest.color}20`,
+                          color: interest.color,
+                        }}
+                      >
+                        {interest.category}
                       </span>
-                    )}
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                        {interest.usageCount.toLocaleString()} users
+                      </span>
+                      {interest.active && (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                          Active
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex space-x-2 opacity-0 transition-opacity group-hover:opacity-100">
+
+                <div className="absolute right-4 top-4 flex space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
                     onClick={() => handleOpenModal(interest)}
                     className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -237,8 +236,8 @@ export function Interests() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
@@ -288,12 +287,23 @@ export function Interests() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Color
             </label>
-            <input
-              type="color"
-              value={formData.color}
-              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-              className="mt-1 h-10 w-full rounded-lg border border-gray-300"
-            />
+            <div className="mt-1 flex items-center gap-4">
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                className="h-10 w-20 rounded-lg border border-gray-300"
+              />
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-lg"
+                style={{ backgroundColor: `${formData.color}20` }}
+              >
+                {categoryIcons[formData.icon] && React.createElement(categoryIcons[formData.icon], {
+                  className: "h-6 w-6",
+                  style: { color: formData.color }
+                })}
+              </div>
+            </div>
           </div>
           <div className="flex items-center">
             <input
