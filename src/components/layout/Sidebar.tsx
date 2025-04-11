@@ -98,7 +98,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             to={item.href}
             className={({ isActive }) =>
               cn(
-                'flex items-center rounded-lg px-2 py-2 text-sm font-medium',
+                'flex items-center rounded-lg px-2 py-2 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'

@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
+
+  // Close sidebar when screen size changes to prevent sidebar staying open on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -19,15 +32,40 @@ export function Layout() {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 z-30 w-64 transform overflow-y-auto bg-white transition-transform duration-300 ease-in-out dark:bg-gray-900 lg:static lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 z-30 w-64 transform overflow-y-auto bg-white transition-transform duration-300 ease-in-out dark:bg-gray-900 lg:relative lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex w-full flex-1 flex-col lg:w-[calc(100%-16rem)]">
+        {/* Announcement Banner */}
+        {showAnnouncement && (
+          <div className="relative w-full bg-blue-600 px-4 py-3 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <p className="text-sm font-medium">
+                  🎉 Welcome to the new admin dashboard! Check out our latest features.
+                </p>
+                <a
+                  href="#"
+                  className="ml-3 text-sm font-medium underline hover:text-blue-100"
+                >
+                  Learn more
+                </a>
+              </div>
+              <button
+                onClick={() => setShowAnnouncement(false)}
+                className="flex-shrink-0 rounded-lg p-1 hover:bg-blue-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <header className="z-10 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
           <div className="flex h-16 items-center justify-between px-4">
             <button
