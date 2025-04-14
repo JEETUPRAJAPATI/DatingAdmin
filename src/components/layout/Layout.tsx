@@ -7,6 +7,7 @@ import { Menu, X } from 'lucide-react';
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Close sidebar when screen size changes to prevent sidebar staying open on mobile
   useEffect(() => {
@@ -32,15 +33,21 @@ export function Layout() {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 z-30 w-64 transform overflow-y-auto bg-white transition-transform duration-300 ease-in-out dark:bg-gray-900 lg:relative lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed inset-y-0 z-30 transform overflow-y-auto bg-white transition-all duration-300 ease-in-out dark:bg-gray-900 lg:static lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${sidebarCollapsed ? 'w-16' : 'w-64'}`}
       >
-        <Sidebar onClose={() => setSidebarOpen(false)} />
+        <Sidebar
+          onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onCollapse={setSidebarCollapsed}
+        />
       </div>
 
       {/* Main content */}
-      <div className="flex w-full flex-1 flex-col lg:w-[calc(100%-16rem)]">
+      <div className={`flex flex-1 flex-col transition-all duration-300 ${
+        sidebarCollapsed ? '' : ''
+      }`}>
         {/* Announcement Banner */}
         {showAnnouncement && (
           <div className="relative w-full bg-blue-600 px-4 py-3 text-white">

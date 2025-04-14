@@ -1,18 +1,38 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn } from 'lucide-react';
 
+interface LoginFormData {
+  email: string;
+  password: string;
+  remember: boolean;
+}
+
 export function Login() {
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
     remember: false,
   });
+  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login:', formData);
+    setError('');
+
+    // Demo credentials check
+    if (formData.email === 'admin@example.com' && formData.password === 'admin123') {
+      localStorage.setItem('isAuthenticated', 'true');
+      if (formData.remember) {
+        localStorage.setItem('rememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+      navigate('/');
+    } else {
+      setError('Invalid email or password');
+    }
   };
 
   return (
@@ -35,6 +55,12 @@ export function Login() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            {error && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                {error}
+              </div>
+            )}
+            
             <div>
               <label
                 htmlFor="email"
@@ -106,6 +132,12 @@ export function Login() {
                 Forgot your password?
               </Link>
             </div>
+          </div>
+
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            <p>Demo credentials:</p>
+            <p>Email: admin@example.com</p>
+            <p>Password: admin123</p>
           </div>
 
           <button

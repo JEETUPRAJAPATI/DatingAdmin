@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -45,10 +45,11 @@ const navigation = [
 
 interface SidebarProps {
   onClose?: () => void;
+  collapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ onClose }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Sidebar({ onClose, collapsed, onCollapse }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -57,12 +58,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   };
 
   return (
-    <div
-      className={cn(
-        'flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900',
-        collapsed ? 'w-16' : 'w-64'
-      )}
-    >
+    <div className="flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex h-16 items-center justify-between px-4">
         {!collapsed && (
           <span className="text-xl font-bold text-gray-900 dark:text-white">
@@ -71,8 +67,8 @@ export function Sidebar({ onClose }: SidebarProps) {
         )}
         <div className="flex items-center">
           <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800 lg:block hidden"
+            onClick={() => onCollapse(!collapsed)}
+            className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800 lg:block"
           >
             {collapsed ? (
               <ChevronRight className="h-5 w-5" />
