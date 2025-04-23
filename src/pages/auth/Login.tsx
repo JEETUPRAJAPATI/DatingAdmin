@@ -1,45 +1,37 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn } from 'lucide-react';
-import { authService } from '../../services/auth.service';
-import { useAuth } from '../../contexts/AuthContext';
-import toast from 'react-hot-toast';
 
 interface LoginFormData {
   email: string;
   password: string;
+  remember: boolean;
 }
 
 export function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
+    remember: false,
   });
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setError('');
 
-    try {
-      const response = await authService.login(formData);
-      
-      if (response.status) {
-        login(response.data.token, response.data.admin);
-        toast.success('Welcome back! Login successful', {
-          icon: '👋',
-        });
-        navigate('/', { replace: true });
+    // Demo credentials check
+    if (formData.email === 'admin@example.com' && formData.password === 'admin123') {
+      localStorage.setItem('isAuthenticated', 'true');
+      if (formData.remember) {
+        localStorage.setItem('rememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Invalid email or password';
-      toast.error(errorMessage, {
-        icon: '❌',
-      });
-    } finally {
-      setIsLoading(false);
+      navigate('/');
+    } else {
+      setError('Invalid email or password');
     }
   };
 
@@ -50,10 +42,25 @@ export function Login() {
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Sign in to your account
           </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Or{' '}
+            <Link
+              to="/register"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            >
+              create a new account
+            </Link>
+          </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            {error && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                {error}
+              </div>
+            )}
+            
             <div>
               <label
                 htmlFor="email"
@@ -101,6 +108,23 @@ export function Login() {
             </div>
 
             <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember"
+                  name="remember"
+                  type="checkbox"
+                  checked={formData.remember}
+                  onChange={(e) => setFormData({ ...formData, remember: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                />
+                <label
+                  htmlFor="remember"
+                  className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+                >
+                  Remember me
+                </label>
+              </div>
+
               <Link
                 to="/forgot-password"
                 className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
@@ -110,13 +134,18 @@ export function Login() {
             </div>
           </div>
 
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            <p>Demo credentials:</p>
+            <p>Email: admin@example.com</p>
+            <p>Password: admin123</p>
+          </div>
+
           <button
             type="submit"
-            disabled={isLoading}
-            className="group relative flex w-full justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative flex w-full justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <LogIn className="mr-2 h-5 w-5" />
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            Sign in
           </button>
         </form>
       </div>

@@ -1,6 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -23,64 +22,59 @@ import { ActivityLogs } from './pages/ActivityLogs';
 import { EmailTemplates } from './pages/EmailTemplates';
 import { Support } from './pages/Support';
 import { Profile } from './pages/Profile';
-import { AuthProvider } from './contexts/AuthContext';
+
+// Simple auth check - in a real app, this would check for a valid token
+const isAuthenticated = () => {
+  return localStorage.getItem('isAuthenticated') === 'true';
+};
+
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-            success: {
-              iconTheme: {
-                primary: '#22c55e',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-        <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+    <BrowserRouter>
+      <Routes>
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Main Routes */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="admins" element={<Admins />} />
-            <Route path="chats" element={<Chats />} />
-            <Route path="subscriptions" element={<Subscriptions />} />
-            <Route path="payments" element={<Payments />} />
-            <Route path="questions" element={<Questions />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="reported" element={<Reports />} />
-            <Route path="banned" element={<BannedUsers />} />
-            <Route path="interests" element={<Interests />} />
-            <Route path="intro-screens" element={<IntroScreens />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="verifications" element={<Verification />} />
-            <Route path="logs" element={<ActivityLogs />} />
-            <Route path="email-templates" element={<EmailTemplates />} />
-            <Route path="support" element={<Support />} />
-            <Route path="profile" element={<Profile />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+        {/* Protected Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="admins" element={<Admins />} />
+          <Route path="chats" element={<Chats />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="questions" element={<Questions />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="reported" element={<Reports />} />
+          <Route path="banned" element={<BannedUsers />} />
+          <Route path="interests" element={<Interests />} />
+          <Route path="intro-screens" element={<IntroScreens />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="verifications" element={<Verification />} />
+          <Route path="logs" element={<ActivityLogs />} />
+          <Route path="email-templates" element={<EmailTemplates />} />
+          <Route path="support" element={<Support />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
