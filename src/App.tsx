@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -22,23 +23,46 @@ import { ActivityLogs } from './pages/ActivityLogs';
 import { EmailTemplates } from './pages/EmailTemplates';
 import { Support } from './pages/Support';
 import { Profile } from './pages/Profile';
+import { useAuthStore } from './store/useAuthStore';
 
-// Simple auth check - in a real app, this would check for a valid token
-const isAuthenticated = () => {
-  return localStorage.getItem('isAuthenticated') === 'true';
-};
-
-// Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  if (!isAuthenticated()) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return <>{children}</>;
 };
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+          success: {
+            style: {
+              background: '#059669',
+            },
+          },
+          error: {
+            style: {
+              background: '#DC2626',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />

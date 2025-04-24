@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Search, User, LogOut, Settings } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import { toast } from 'react-hot-toast';
 
 interface Notification {
   id: string;
@@ -36,6 +38,9 @@ const dummyNotifications: Notification[] = [
 ];
 
 export function Navbar() {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+  const admin = useAuthStore((state) => state.admin);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -60,6 +65,12 @@ export function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
 
   const markAsRead = (id: string) => {
     setNotifications(notifications.map(notification =>
@@ -107,7 +118,7 @@ export function Navbar() {
 
       <div className="flex items-center gap-2 sm:gap-4">
         <ThemeToggle />
-        
+
         {/* Notifications */}
         <div className="relative" ref={notificationRef}>
           <button
@@ -165,7 +176,9 @@ export function Navbar() {
             onClick={() => setShowProfile(!showProfile)}
           >
             <User className="h-5 w-5" />
-            <span className="hidden text-sm font-medium sm:block">Admin</span>
+            <span className="hidden text-sm font-medium sm:block">
+              {admin?.name || 'Admin'}
+            </span>
           </button>
 
           {showProfile && (
@@ -178,6 +191,7 @@ export function Navbar() {
                 Profile Settings
               </Link>
               <button
+                onClick={handleLogout}
                 className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <LogOut className="h-4 w-4" />

@@ -1,37 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn } from 'lucide-react';
-
-interface LoginFormData {
-  email: string;
-  password: string;
-  remember: boolean;
-}
+import { toast } from 'react-hot-toast';
+import { login } from '../../services/auth';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export function Login() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<LoginFormData>({
+  const setAdmin = useAuthStore((state) => state.setAdmin);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
     remember: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    // Demo credentials check
-    if (formData.email === 'admin@example.com' && formData.password === 'admin123') {
-      localStorage.setItem('isAuthenticated', 'true');
-      if (formData.remember) {
-        localStorage.setItem('rememberedEmail', formData.email);
+    try {
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (response.status && response.data) {
+        setAdmin(response.data.admin);
+        toast.success('Login successful!');
+        navigate('/', { replace: true });
       } else {
-        localStorage.removeItem('rememberedEmail');
+
+        throw new Error('Invalid response from server');
       }
-      navigate('/');
-    } else {
-      setError('Invalid email or password');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Invalid email or password';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,14 +69,14 @@ export function Login() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} >
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
             {error && (
               <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
                 {error}
               </div>
             )}
-            
+
             <div>
               <label
                 htmlFor="email"
@@ -134,18 +150,13 @@ export function Login() {
             </div>
           </div>
 
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            <p>Demo credentials:</p>
-            <p>Email: admin@example.com</p>
-            <p>Password: admin123</p>
-          </div>
-
           <button
             type="submit"
-            className="group relative flex w-full justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={isLoading}
+            className="group relative flex w-full justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
             <LogIn className="mr-2 h-5 w-5" />
-            Sign in
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>
